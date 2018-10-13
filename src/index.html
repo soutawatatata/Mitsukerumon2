@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Mitsukerumon</title>
+  <script language="javascript" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script language="javascript" type="text/javascript" src="./js/web3.min.js"></script>
+  <script language="javascript" type="text/javascript" src="./js/contract_abi.js"></script>
+</head>
+
+<body>
+  <div id="txStatus"></div>
+  <div id="contract"></div>
+
+  <h1>Mitsukerumon</h1>
+  This is Safety confirmation application in case of disaster.
+
+  <h2>How to use</h2>
+  1. Connect Metamask. <br>
+  2. Input lookingnumber text that like [生年.月日.名前(Safeside)/生年.月日.名前(Disasterside)] ex.[1×××.××××.satojiro/1××××.××××.murotuyoshi] in textbox <br>
+  3. Click Generate to set lookingnumber in contract. <br>
+  4. Wait transaction is confirmed. <br>
+  5. Click Report to look to lookingnumber from contract.<br>
+
+  <h2></h2>
+  <input type="text" id="uint">
+  <input type="button" value="Generate" onClick="generatelookingnumber()">
+  <input type="button" value="Report" onClick="reportlookingperson()">
+
+  <script>
+    var contract;
+    var userAccount;
+
+    function startApp() {
+      //Replace "YOUR_CONTRACT_ADDRESS" with your contract address
+      var contractAddress = "";//デプロイ後のコントラクトアドレス
+      contract = new web3js.eth.Contract(contractABI, contractAddress);
+        //Userがメタマスクアカウントを変えた時に必要な記述
+      var accountInterval = setInterval(function() {
+        web3.eth.getAccounts((error, accounts) => {
+          if (accounts[0] !== userAccount) {
+            userAccount = accounts[0];
+          }
+        });
+      }, 100);
+    }
+    //メタマスクを検出するためのテンプレコード
+    window.addEventListener('load', function() {
+      // Checking if Web3 has been injected by the browser (Mist/MetaMask)
+      if (typeof web3 !== 'undefined') {
+        // Use Mist/MetaMask's provider
+        web3js = new Web3(web3.currentProvider);
+        alert("起動");
+      } else {
+         alert("メタマスクをインストールしてください。");
+        // Handle the case where the user doesn't have Metamask installed
+        // Probably show them a message prompting them to install Metamask
+      }
+      // Now you can start your app & access web3 freely:
+      startApp()
+    })
+
+    //numberをコントラクトに送る。
+    function generatelookingnumber() {
+      return contract.methods.generatelookingnumber()
+        .send({ from: userAccount })
+        .on("receipt", function(receipt) {
+          //Process when transaction is confirmed
+          console.log("success")
+        })
+        .on("error", function(error) {
+          //Process when transaction is failed
+          console.log("error")
+        });
+    }
+　　//ここだけ、コントラクトでイベントOKなら「Looking成功したよ！」って出すのだけ書かないといけない。htmlで、記述が出現するのどうやって書くか学ばなないと。
+    function reportlookingperson() {
+      return contract.methods.reportlookingperson()
+      .send({ from: userAccount })
+      .on("receipt", function(receipt) {
+        $("#txStatus").text("Successfully you can find Disasterside people!");
+    // トランザクションがブロックチェーンに取り込まれた。UIをアップデートしよう
+        getZombiesByOwner(userAccount).then(displayZombies);
+     })
+      .on("error", function(error) {
+        $("#txStatus").text("Sorry you don't find Disasterside people yet");
+      });
+    }
+  </script>
+
+</body>
+
+</html>
